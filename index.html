@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <title>Socket.IOの練習</title>
+</head>
+<body>
+    <form id="myForm">
+        <input type="text" id="name"> <input type="text" id="msg"> <input type="submit" value="Send!">
+    </form>
+    <form id="joinForm">
+      なまえ：<input type="text" id="nickname"><input type="submit" value="参加">
+    </form>
+    <div>お題：<p id="question"></p></div>
+    自分：<p id="me"></p>
+    参加者；<ul id="member"></ul>
+    回答者：<p id="answer"></p>
+    出題者：<p id="questioner"></p>
+    <ul id="logs"></ul>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        $(function() {
+            var socket = io.connect();
+            var member = [];  //参加者
+
+            // emit: イベントを発信している
+            // on: イベントを待ち受けている
+            socket.on('emit_from_server_onload', function(data) {
+
+                for(var i=0; i < data.length; i++){
+                $('#member').append('<li>'+ (data[i]) + '</li>');
+                }
+            })
+
+            // チャットフォーム
+            $('#myForm').submit(function(e) {
+                e.preventDefault();
+                socket.emit('emit_from_client', {
+                    msg: $('#msg').val(),
+                    name: $('#name').val()
+                });
+                $('#msg').val('').focus();
+            });
+            socket.on('emit_from_server', function(data) {
+              $('#member').append($('<li>').text(data));
+            });
+
+
+            //  参加フォーム
+            $('#joinForm').submit(function(e) {
+                e.preventDefault();
+                socket.emit('emit_from_client_join', {
+                    nickname: $('#nickname').val()
+                });
+            });
+            socket.on('emit_from_server_join', function(data) {
+                $('#member').append($('<li>').text(data));
+            });
+            socket.on('emit_from_server_join_me', function(data) {
+                $('#me').append(data);
+                myname = data;
+            });
+
+            //　退出時
+            socket.on('emit_from_server_disconnect', function(member){
+              
+              $('#member').empty();
+
+              for(var i=0; i < member.length; i++){
+                $('#member').append('<li>'+ (member[i]) + '</li>');
+                }
+
+            });
+
+            //お題
+            var katakana = ["パソコン", "スマホ", "コーヒー", "スクランブルエッグ", "エアコン"];
+
+            syutudai();
+            function syutudai(){
+              //最大値は配列の「要素数」にする
+              var random = Math.floor( Math.random() * katakana.length );
+              $('#question').text(katakana[random]);
+              console.log(katakana[random]);
+            }
+
+
+        });
+    </script>
+</body>
+</html>
